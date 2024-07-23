@@ -1,6 +1,11 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
+
 import 'package:todo_app/pages/list_page.dart';
+import 'package:todo_app/utils/databasehelper.dart';
 import 'package:todo_app/utils/todo.dart';
 
 void main() {
@@ -13,7 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => BaseState(),
+      create: (context) => MemoryState(),
       child: MaterialApp(
         title: 'ADHD TODO',
         theme: ThemeData(
@@ -26,20 +31,37 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class BaseState extends ChangeNotifier {
-  // todo stuff saved here
-  int gID = 0;
+// db helper functions for state management
+class MemoryState extends ChangeNotifier {
+  final _dbHelper = DatabaseHelper();
 
-  List<ToDo> todoList = [];
+  // in-memory data
+  List<Topic> _topics = [];
+  List<Topic> get topics => _topics;
 
-  void addToDo(ToDo item) {
-    todoList.add(item);
+  List<ToDo> _todos = [];
+  List<ToDo> get todos => _todos;
+
+  void addTopic(Topic topic) {
+    _topics.add(topic);
     notifyListeners();
   }
 
-  void toggleComplete(int id) {
-    // flips the state of the isCompleted
-    todoList[id].isCompleted = !todoList[id].isCompleted;
+  void addToDo(ToDo todo) {
+    _todos.add(todo);
+    notifyListeners();
+  }
+
+  void updateToDo(ToDo todo) {}
+
+  // only to be invoked in the start of the app
+  Future<void> fetchTopics() async {
+    _topics = await _dbHelper.fetchTopics();
+    notifyListeners();
+  }
+
+  Future<void> fetchToDosByTopic(int topicId) async {
+    _todos = await _dbHelper.fetchToDosByTopic(topicId);
     notifyListeners();
   }
 }

@@ -1,38 +1,97 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/main.dart';
+import 'package:todo_app/utils/databasehelper.dart';
 import 'package:todo_app/utils/todo.dart';
 
 class ListPage extends StatelessWidget {
-  // vvvvv 테스트용 아이템들 추후 삭제
-  ToDo td1 =
-      ToDo(id: 0, task: "finish the app", description: "flutter practice");
-  ToDo td2 = ToDo(id: 1, task: "project sekai", description: "aoyagi touya");
+  const ListPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    var baseState = context.watch<BaseState>();
-    var todoList = baseState.todoList;
+    DatabaseHelper _dbHelper = DatabaseHelper();
+    // var memoryState = context.watch<MemoryState>();
+    // var topics = memoryState.topics;
 
-    // //처음에만 있다가 바로 지우셈 vvvvv 삭제!!
-    // todoList.add(td1);
-    // todoList.add(td2);
+    return FutureBuilder<List<Topic>>(
+      future: _dbHelper.fetchTopics(),
+      builder: (context, snapshot) {
+        // if its still loading then loading icon
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView.builder(
-      itemCount: todoList.length,
-      itemBuilder: (context, id) {
-        final todo = todoList[id];
-        return ListTile(
-          leading: IconButton(
-              icon: todo.isCompleted
-                  ? const Icon(Icons.check_box_outline_blank)
-                  : const Icon(Icons.check_box),
-              onPressed: () {
-                // a todo with id done
-                baseState.toggleComplete(id);
-              }),
-          title: Text(todo.task),
+        final topics = snapshot.data!;
+
+        if (topics.isEmpty) {
+          return Center(child: AddTopicButton());
+        }
+
+        return ListView.builder(
+          itemCount: topics.length,
+          itemBuilder: (context, index) {
+            final topic = topics[index];
+
+            return ExpansionTile(
+              title: Text(
+                topic.name,
+                style: TextStyle(color: topic.color),
+              ),
+              children: [
+                FutureBuilder<List<ToDo>>(
+                  future: _dbHelper.fetchToDosByTopic(topic.id),
+                  builder: (context, snapshot) {
+                    // if its still loading then loading icon
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final todos = snapshot.data!;
+
+                    // if no todos
+                    if (todos.isEmpty) {
+                      return const Text("No todos yet!");
+                    }
+
+                    return ListView.builder(
+                      itemCount: todos.length,
+                      itemBuilder: (context, index) {
+                        final todo = todos[index];
+                        return ListTile(
+                            title: Text(todo.task),
+                            subtitle: todo.description != null
+                                ? Text(todo.description!)
+                                : null,
+                            leading: Checkbox(
+                              value: todo.isCompleted,
+                              onChanged: (value) {
+                                todo.isCompleted = value!;
+                                _dbHelper.updateToDo(todo);
+                              },
+                            ));
+                      },
+                    );
+                  },
+                )
+              ],
+            );
+          },
         );
+      },
+    );
+  }
+}
+
+class AddTopicButton extends StatelessWidget {
+  const AddTopicButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () async {
+        final topic =
+            Topic(id: DateTime.now().millisecondsSinceEpoch, name: 'New Topic');
       },
     );
   }
