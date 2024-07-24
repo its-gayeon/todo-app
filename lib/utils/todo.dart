@@ -45,6 +45,7 @@ class Topic {
   final int id;
   Color color;
   String name;
+  List<ToDo> todos = [];
 
   Topic({
     required this.id,

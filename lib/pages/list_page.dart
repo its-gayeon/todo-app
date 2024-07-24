@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/main.dart';
 import 'package:todo_app/utils/databasehelper.dart';
@@ -9,74 +12,68 @@ class ListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    DatabaseHelper _dbHelper = DatabaseHelper();
-    // var memoryState = context.watch<MemoryState>();
-    // var topics = memoryState.topics;
+    // DatabaseHelper _dbHelper = DatabaseHelper();
+    var memoryState = context.watch<MemoryState>();
+    var topics = memoryState.topics;
 
-    return FutureBuilder<List<Topic>>(
-      future: _dbHelper.fetchTopics(),
-      builder: (context, snapshot) {
-        // if its still loading then loading icon
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    Topic tp1 = Topic(id: 0, name: "topic1");
+    Topic tp2 = Topic(id: 1, name: "topic2");
+    ToDo td1 = ToDo(id: 0, task: "task1", topicId: 0);
+    ToDo td2 = ToDo(id: 1, task: "task2", topicId: 1);
 
-        final topics = snapshot.data!;
+    // tp1.todos.add(td1);
+    // tp2.todos.add(td2);
 
-        if (topics.isEmpty) {
-          return Center(child: AddTopicButton());
-        }
+    // topics.add(tp1);
+    // topics.add(tp2);
 
-        return ListView.builder(
-          itemCount: topics.length,
-          itemBuilder: (context, index) {
-            final topic = topics[index];
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const AddTopicButton(),
+          topics.isEmpty
+              ? const SizedBox.shrink()
+              : ListView.builder(
+                  itemCount: topics.length,
+                  itemBuilder: (context, index) {
+                    final topic = topics[index];
+                    final todos = topic.todos;
 
-            return ExpansionTile(
-              title: Text(
-                topic.name,
-                style: TextStyle(color: topic.color),
-              ),
-              children: [
-                FutureBuilder<List<ToDo>>(
-                  future: _dbHelper.fetchToDosByTopic(topic.id),
-                  builder: (context, snapshot) {
-                    // if its still loading then loading icon
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final todos = snapshot.data!;
-
-                    // if no todos
-                    if (todos.isEmpty) {
-                      return const Text("No todos yet!");
-                    }
-
-                    return ListView.builder(
-                      itemCount: todos.length,
-                      itemBuilder: (context, index) {
-                        final todo = todos[index];
-                        return ListTile(
-                            title: Text(todo.task),
-                            subtitle: todo.description != null
-                                ? Text(todo.description!)
-                                : null,
-                            leading: Checkbox(
-                              value: todo.isCompleted,
-                              onChanged: (value) {
-                                todo.isCompleted = value!;
-                                _dbHelper.updateToDo(todo);
-                              },
-                            ));
-                      },
+                    return ExpansionTile(
+                      title: Text(
+                        topic.name,
+                        style: TextStyle(color: topic.color),
+                      ),
+                      initiallyExpanded: true,
+                      children: [
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const ClampingScrollPhysics(),
+                          itemCount: todos.length,
+                          itemBuilder: (context, index) {
+                            final todo = todos[index];
+                            return ListTile(
+                                title: Text(todo.task),
+                                subtitle: todo.description != null
+                                    ? Text(todo.description!)
+                                    : null,
+                                leading: Checkbox(
+                                  value: todo.isCompleted,
+                                  onChanged: (value) {
+                                    todo.isCompleted = value!;
+                                    memoryState.updateToDo(todo);
+                                  },
+                                ));
+                          },
+                        )
+                      ],
                     );
                   },
-                )
-              ],
-            );
-          },
-        );
-      },
+                ),
+        ],
+      ),
     );
   }
 }
@@ -88,10 +85,37 @@ class AddTopicButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () async {
-        final topic =
-            Topic(id: DateTime.now().millisecondsSinceEpoch, name: 'New Topic');
+    return FilledButton(
+      //style: make it minimum size!,
+      child: const Icon(Icons.new_label),
+      //style: ButtonStyle(shape: ),
+      onPressed: () => _topicDialog(context),
+    );
+  }
+
+  Future<void> _topicDialog(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: const Text("Add New Topic"),
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(5))),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 24),
+          titleTextStyle: TextStyle(
+            color: Theme.of(context).primaryColor,
+            fontSize: Theme.of(context).textTheme.titleSmall!.fontSize,
+          ),
+          children: const [
+            Column(children: [
+              Padding(
+                padding: EdgeInsets.all(10.0),
+                child: TextField(),
+              ),
+            ]),
+          ],
+        );
       },
     );
   }

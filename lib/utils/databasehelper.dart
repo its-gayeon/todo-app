@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:provider/provider.dart';
 import 'package:path/path.dart';
 import 'todo.dart';
+
+// TODO: Topic안에 ToDo 들어있으니까 db 업뎃 / 로드할 때 이거 반영하게 고치기!!!!!!!
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
