@@ -1,7 +1,4 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/main.dart';
 import 'package:todo_app/utils/databasehelper.dart';
@@ -27,54 +24,124 @@ class ListPage extends StatelessWidget {
     // topics.add(tp1);
     // topics.add(tp2);
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const AddTopicButton(),
-          topics.isEmpty
-              ? const SizedBox.shrink()
-              : ListView.builder(
-                  itemCount: topics.length,
-                  itemBuilder: (context, index) {
-                    final topic = topics[index];
-                    final todos = topic.todos;
-
-                    return ExpansionTile(
-                      title: Text(
-                        topic.name,
-                        style: TextStyle(color: topic.color),
-                      ),
-                      initiallyExpanded: true,
-                      children: [
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const ClampingScrollPhysics(),
-                          itemCount: todos.length,
-                          itemBuilder: (context, index) {
-                            final todo = todos[index];
-                            return ListTile(
-                                title: Text(todo.task),
-                                subtitle: todo.description != null
-                                    ? Text(todo.description!)
-                                    : null,
-                                leading: Checkbox(
-                                  value: todo.isCompleted,
-                                  onChanged: (value) {
-                                    todo.isCompleted = value!;
-                                    memoryState.updateToDo(todo);
-                                  },
-                                ));
-                          },
-                        )
-                      ],
-                    );
-                  },
-                ),
-        ],
+    // navigation rail's destinations
+    List<NavigationRailDestination> navrail = [
+      const NavigationRailDestination(
+        icon: Icon(Icons.star),
+        label: Text("Today"),
       ),
-    );
+      const NavigationRailDestination(
+        icon: Icon(Icons.start),
+        label: Text("Future"),
+      ),
+      const NavigationRailDestination(
+        padding: EdgeInsets.only(top: 30),
+        icon: Icon(Icons.circle),
+        label: Text("All"),
+      ),
+    ];
+
+    // add the topics to the rail
+    for (Topic topic in topics) {
+      navrail.add(NavigationRailDestination(
+          icon: Icon(
+            Icons.circle,
+            color: topic.color,
+          ),
+          label: Text(topic.name)));
+    }
+
+    var ListArea = Placeholder();
+
+    return LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth >= 500) {
+        return Row(
+          children: [
+            NavigationRail(
+              // consider manually making it!
+              extended: constraints.maxWidth >= 300,
+              destinations: navrail,
+              selectedIndex: 0,
+              trailing: const Expanded(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      AddTopicButton(),
+                      SearchButton(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const VerticalDivider(),
+            Expanded(child: ListArea),
+          ],
+        );
+      } else {
+        return Placeholder();
+      }
+    });
+
+    // return Padding(
+    //   padding: const EdgeInsets.all(8.0),
+    //   child: Column(
+    //     crossAxisAlignment: CrossAxisAlignment.stretch,
+    //     children: [
+    //       topics.isEmpty
+    //           ? const SizedBox.shrink()
+    //           : ListView.builder(
+    //               itemCount: topics.length,
+    //               itemBuilder: (context, index) {
+    //                 final topic = topics[index];
+    //                 final todos = topic.todos;
+
+    //                 return ExpansionTile(
+    //                   title: Text(
+    //                     topic.name,
+    //                     style: TextStyle(color: topic.color),
+    //                   ),
+    //                   initiallyExpanded: true,
+    //                   children: [
+    //                     ListView.builder(
+    //                       shrinkWrap: true,
+    //                       physics: const ClampingScrollPhysics(),
+    //                       itemCount: todos.length,
+    //                       itemBuilder: (context, index) {
+    //                         final todo = todos[index];
+    //                         return ListTile(
+    //                             title: Text(todo.task),
+    //                             subtitle: todo.description != null
+    //                                 ? Text(todo.description!)
+    //                                 : null,
+    //                             leading: Checkbox(
+    //                               value: todo.isCompleted,
+    //                               onChanged: (value) {
+    //                                 todo.isCompleted = value!;
+    //                                 memoryState.updateToDo(todo);
+    //                               },
+    //                             ));
+    //                       },
+    //                     )
+    //                   ],
+    //                 );
+    //               },
+    //             ),
+    //     ],
+    //   ),
+    // );
+  }
+}
+
+class SearchButton extends StatelessWidget {
+  const SearchButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(onPressed: () {}, icon: const Icon(Icons.search));
   }
 }
 
@@ -85,9 +152,9 @@ class AddTopicButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
+    return TextButton(
       //style: make it minimum size!,
-      child: const Icon(Icons.new_label),
+      child: const Text("+ Add"),
       //style: ButtonStyle(shape: ),
       onPressed: () => _topicDialog(context),
     );

@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +17,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MemoryState(),
       child: MaterialApp(
-        title: 'ADHD TODO',
+        title: 'TODO on Desk',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
           useMaterial3: true,
@@ -94,52 +93,55 @@ class _BasePageState extends State<BasePage> {
     Widget todoViewPage;
     switch (selectedViewType) {
       case ViewType.list:
-        todoViewPage = ListPage();
+        todoViewPage = const ListPage();
         break;
       case ViewType.calendar:
-        todoViewPage = Text("cal");
+        todoViewPage = const Text("cal");
         break;
       default:
         throw UnimplementedError('shouldn\'t happen!!');
     }
 
-    // var mainArea = ColoredBox(
-    //   color: Colors.white,
-    //   child: AnimatedSwitcher(
-    //     duration: const Duration(milliseconds: 200),
-    //     child: todoViewPage,
-    //   ),
-    // );
-
-    var mainArea = PageView(
-      children: [ListPage(), Text("cal")],
+    var mainArea = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: todoViewPage,
     );
+
+    // var mainArea = PageView(
+    //   children: [ListPage(), Text("cal")],
+    // );
 
     return Scaffold(
       body: Column(
         children: [
-          // "app bar"
-          // button that changes between todo's list <-> calendar view
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SegmentedButton<ViewType>(
-                segments: const <ButtonSegment<ViewType>>[
-                  ButtonSegment<ViewType>(
-                      value: ViewType.list, label: Text("List")),
-                  ButtonSegment<ViewType>(
-                      value: ViewType.calendar, label: Text("Calendar"))
-                ],
-                selected: <ViewType>{selectedViewType},
-                onSelectionChanged: (Set<ViewType> type) {
-                  setState(() {
-                    selectedViewType = type.first;
-                  });
-                },
-                showSelectedIcon: false,
+          //page controller
+          SafeArea(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8, top: 8),
+                child: SegmentedButton<ViewType>(
+                  segments: const <ButtonSegment<ViewType>>[
+                    ButtonSegment<ViewType>(
+                        value: ViewType.list,
+                        label: Icon(Icons.list) /*Text("List")*/),
+                    ButtonSegment<ViewType>(
+                        value: ViewType.calendar,
+                        label: Icon(Icons.calendar_today) /*Text("Calendar")*/)
+                  ],
+                  selected: <ViewType>{selectedViewType},
+                  onSelectionChanged: (Set<ViewType> type) {
+                    setState(() {
+                      selectedViewType = type.first;
+                    });
+                  },
+                  showSelectedIcon: false,
+                ),
               ),
             ),
+          ),
+          const Divider(
+            thickness: 1.3,
           ),
           // sub page that shows the todo stuff
           Expanded(child: mainArea),
