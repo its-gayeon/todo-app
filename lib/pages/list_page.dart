@@ -1,18 +1,29 @@
+import 'dart:developer';
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/main.dart';
 // import 'package:todo_app/utils/databasehelper.dart';
 import 'package:todo_app/utils/todo.dart';
 
-class ListPage extends StatelessWidget {
+class ListPage extends StatefulWidget {
   const ListPage({super.key});
+
+  @override
+  State<ListPage> createState() => _ListPageState();
+}
+
+class _ListPageState extends State<ListPage> {
+  double _width = 150;
 
   @override
   Widget build(BuildContext context) {
     // DatabaseHelper _dbHelper = DatabaseHelper();
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
-
     // Topic tp1 = Topic(id: 0, name: "topic1");
     // Topic tp2 = Topic(id: 1, name: "topic2");
     // ToDo td1 = ToDo(id: 0, task: "task1", topicId: 0);
@@ -24,118 +35,142 @@ class ListPage extends StatelessWidget {
     // topics.add(tp1);
     // topics.add(tp2);
 
-    // navigation rail's destinations
-    List<NavigationRailDestination> navrail = [
-      const NavigationRailDestination(
-        icon: Icon(Icons.star),
-        label: Text("Today"),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.start),
-        label: Text("Future"),
-      ),
-      const NavigationRailDestination(
-        padding: EdgeInsets.only(top: 30),
-        icon: Icon(Icons.circle),
-        label: Text("All"),
-      ),
-    ];
-
-    // add the topics to the rail's destinations
-    for (Topic topic in topics) {
-      navrail.add(NavigationRailDestination(
-        icon: Icon(
-          Icons.circle,
-          color: topic.color,
-        ),
-        label: Text(topic.name),
-        selectedIcon: Icon(Icons.circle_outlined, color: topic.color),
-      ));
-    }
-
-    var ListArea = Placeholder();
-
     return LayoutBuilder(builder: (context, constraints) {
-      if (constraints.maxWidth >= 500) {
-        // if width is enough, put it on the left
+      if (constraints.maxWidth >= 300) {
         return Row(
           children: [
-            NavigationRail(
-              extended: constraints.maxWidth >= 300,
-              destinations: navrail, // list created above
-              selectedIndex: 0, // "today" is the default
-              minExtendedWidth: 150,
-              trailing: const Expanded(
-                // add and search button
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      AddTopicButton(),
-                      SearchButton(),
-                    ],
-                  ),
-                ),
-              ),
+            SizedBox(width: _width, child: ListNavBar()),
+            GestureDetector(
+              // drag to change the width of the nav bar
+              behavior: HitTestBehavior.translucent,
+              child: const VerticalDivider(),
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  if (_width <= 150 && details.delta.dx < 0) {
+                    return; // prevents collapsing
+                  }
+                  _width += details.delta.dx;
+                });
+              },
             ),
-            const VerticalDivider(),
-            Expanded(child: ListArea),
           ],
         );
       } else {
-        // if the width isn't enough, put it down below (snack bar)
-        return Placeholder();
+        return const Placeholder();
       }
     });
+  }
+}
 
-    // return Padding(
-    //   padding: const EdgeInsets.all(8.0),
-    //   child: Column(
-    //     crossAxisAlignment: CrossAxisAlignment.stretch,
-    //     children: [
-    //       topics.isEmpty
-    //           ? const SizedBox.shrink()
-    //           : ListView.builder(
-    //               itemCount: topics.length,
-    //               itemBuilder: (context, index) {
-    //                 final topic = topics[index];
-    //                 final todos = topic.todos;
+// custom navigation bar for listpage
+class ListNavBar extends StatelessWidget {
+  const ListNavBar({
+    super.key,
+  });
 
-    //                 return ExpansionTile(
-    //                   title: Text(
-    //                     topic.name,
-    //                     style: TextStyle(color: topic.color),
-    //                   ),
-    //                   initiallyExpanded: true,
-    //                   children: [
-    //                     ListView.builder(
-    //                       shrinkWrap: true,
-    //                       physics: const ClampingScrollPhysics(),
-    //                       itemCount: todos.length,
-    //                       itemBuilder: (context, index) {
-    //                         final todo = todos[index];
-    //                         return ListTile(
-    //                             title: Text(todo.task),
-    //                             subtitle: todo.description != null
-    //                                 ? Text(todo.description!)
-    //                                 : null,
-    //                             leading: Checkbox(
-    //                               value: todo.isCompleted,
-    //                               onChanged: (value) {
-    //                                 todo.isCompleted = value!;
-    //                                 memoryState.updateToDo(todo);
-    //                               },
-    //                             ));
-    //                       },
-    //                     )
-    //                   ],
-    //                 );
-    //               },
-    //             ),
-    //     ],
-    //   ),
-    // );
+  @override
+  Widget build(BuildContext context) {
+    var memoryState = context.watch<MemoryState>();
+    var topics = memoryState.topics;
+
+    var textTheme = Theme.of(context).textTheme;
+    var textStyle = TextStyle(
+      fontSize: textTheme.labelMedium!.fontSize,
+      fontWeight: textTheme.labelMedium!.fontWeight,
+    );
+
+    return Column(
+      children: <Widget>[
+        // Today
+        NavBarTile(
+          icon: const Icon(
+            Icons.star,
+            color: Colors.amber,
+            size: 20,
+          ),
+          text: Text(
+            "Today",
+            style: textStyle,
+          ),
+        ),
+
+        // Upcoming
+        NavBarTile(
+          icon: const Icon(
+            Icons.calendar_today,
+            color: Colors.indigo,
+            size: 20,
+          ),
+          text: Text(
+            "Upcoming",
+            style: textStyle,
+          ),
+        ),
+
+        const Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Divider(),
+        ),
+
+        // All
+        NavBarTile(
+          icon: const Icon(
+            Icons.toc,
+            color: Colors.black54,
+            size: 20,
+          ),
+          text: Text(
+            "All",
+            style: textStyle,
+          ),
+        ),
+
+        // scrollable topics
+        SizedBox(
+          height: MediaQuery.sizeOf(context).height / 2 + 55,
+          child: ListView.builder(
+            itemCount: topics.length,
+            itemBuilder: (context, index) {
+              return NavBarTile(
+                icon: Icon(
+                  Icons.circle,
+                  size: 20,
+                  color: topics[index].color,
+                ),
+                text: Text(
+                  topics[index].name,
+                  style: textStyle,
+                ),
+              );
+            },
+          ),
+        ),
+
+        // buttons for adding and searching topics
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [AddTopicButton(), SearchButton()],
+        )
+      ],
+    );
+  }
+}
+
+class NavBarTile extends StatelessWidget {
+  const NavBarTile({super.key, required this.icon, required this.text});
+
+  final Icon icon;
+  final Text text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      horizontalTitleGap: 6,
+      minTileHeight: 20,
+      onTap: () {},
+      leading: icon,
+      title: text,
+    );
   }
 }
 
