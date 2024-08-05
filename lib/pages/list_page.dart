@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/main.dart';
-import 'package:todo_app/utils/databasehelper.dart';
+// import 'package:todo_app/utils/databasehelper.dart';
 import 'package:todo_app/utils/todo.dart';
 
 class ListPage extends StatelessWidget {
@@ -13,10 +13,10 @@ class ListPage extends StatelessWidget {
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
 
-    Topic tp1 = Topic(id: 0, name: "topic1");
-    Topic tp2 = Topic(id: 1, name: "topic2");
-    ToDo td1 = ToDo(id: 0, task: "task1", topicId: 0);
-    ToDo td2 = ToDo(id: 1, task: "task2", topicId: 1);
+    // Topic tp1 = Topic(id: 0, name: "topic1");
+    // Topic tp2 = Topic(id: 1, name: "topic2");
+    // ToDo td1 = ToDo(id: 0, task: "task1", topicId: 0);
+    // ToDo td2 = ToDo(id: 1, task: "task2", topicId: 1);
 
     // tp1.todos.add(td1);
     // tp2.todos.add(td2);
@@ -41,28 +41,32 @@ class ListPage extends StatelessWidget {
       ),
     ];
 
-    // add the topics to the rail
+    // add the topics to the rail's destinations
     for (Topic topic in topics) {
       navrail.add(NavigationRailDestination(
-          icon: Icon(
-            Icons.circle,
-            color: topic.color,
-          ),
-          label: Text(topic.name)));
+        icon: Icon(
+          Icons.circle,
+          color: topic.color,
+        ),
+        label: Text(topic.name),
+        selectedIcon: Icon(Icons.circle_outlined, color: topic.color),
+      ));
     }
 
     var ListArea = Placeholder();
 
     return LayoutBuilder(builder: (context, constraints) {
       if (constraints.maxWidth >= 500) {
+        // if width is enough, put it on the left
         return Row(
           children: [
             NavigationRail(
-              // consider manually making it!
               extended: constraints.maxWidth >= 300,
-              destinations: navrail,
-              selectedIndex: 0,
+              destinations: navrail, // list created above
+              selectedIndex: 0, // "today" is the default
+              minExtendedWidth: 150,
               trailing: const Expanded(
+                // add and search button
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: Row(
@@ -80,6 +84,7 @@ class ListPage extends StatelessWidget {
           ],
         );
       } else {
+        // if the width isn't enough, put it down below (snack bar)
         return Placeholder();
       }
     });
