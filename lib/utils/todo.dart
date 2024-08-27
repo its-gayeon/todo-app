@@ -9,13 +9,13 @@ class ToDo {
   int topicId; // Foreign key to the Topic
 
   ToDo({
-    required this.id,
+    int? id,
     required this.task,
     this.date,
     this.description,
     this.isCompleted = false,
     required this.topicId,
-  });
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch;
 
   // helper functions for db
   Map<String, dynamic> toMap() {
@@ -42,16 +42,16 @@ class ToDo {
 }
 
 class Topic {
-  final int id;
+  final int id; // mainly custom id starting from 3
   Color color;
   String name;
   List<ToDo> todos = [];
 
   Topic({
-    required this.id,
+    int? id,
     this.color = Colors.black,
     required this.name,
-  });
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch;
 
   // helper functions for db
   Map<String, dynamic> toMap() {

@@ -1,12 +1,9 @@
 import 'dart:developer';
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-import 'package:todo_app/main.dart';
-// import 'package:todo_app/utils/databasehelper.dart';
+import 'package:todo_app/states/memory_state.dart';
+import 'package:todo_app/states/selected_state.dart';
 import 'package:todo_app/utils/todo.dart';
 
 class ListPage extends StatefulWidget {
@@ -24,8 +21,9 @@ class _ListPageState extends State<ListPage> {
     // DatabaseHelper _dbHelper = DatabaseHelper();
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
-    // Topic tp1 = Topic(id: 0, name: "topic1");
-    // Topic tp2 = Topic(id: 1, name: "topic2");
+
+    // Topic tp1 = Topic(id: 3, name: "topic1");
+    // Topic tp2 = Topic(id: 4, name: "topic2");
     // ToDo td1 = ToDo(id: 0, task: "task1", topicId: 0);
     // ToDo td2 = ToDo(id: 1, task: "task2", topicId: 1);
 
@@ -35,30 +33,78 @@ class _ListPageState extends State<ListPage> {
     // topics.add(tp1);
     // topics.add(tp2);
 
-    return LayoutBuilder(builder: (context, constraints) {
-      if (constraints.maxWidth >= 300) {
-        return Row(
-          children: [
-            SizedBox(width: _width, child: ListNavBar()),
-            GestureDetector(
-              // drag to change the width of the nav bar
-              behavior: HitTestBehavior.translucent,
-              child: const VerticalDivider(),
-              onHorizontalDragUpdate: (details) {
-                setState(() {
-                  if (_width <= 150 && details.delta.dx < 0) {
-                    return; // prevents collapsing
-                  }
-                  _width += details.delta.dx;
-                });
-              },
-            ),
-          ],
-        );
+    return ChangeNotifierProvider(
+      create: (context) => SelectedState(),
+      child: LayoutBuilder(builder: (context, constraints) {
+        if (constraints.maxWidth >= 300) {
+          return Row(
+            //  [ navigation bar | context ]
+            children: [
+              SizedBox(width: _width, child: const ListNavBar()),
+              GestureDetector(
+                // drag to change the width of the nav bar
+                behavior: HitTestBehavior.translucent,
+                child: const Padding(
+                  padding: EdgeInsets.only(left: 4.0),
+                  child: VerticalDivider(endIndent: 8),
+                ),
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    if (_width <= 153 && details.delta.dx < 0) {
+                      return; // prevents collapsing
+                    }
+                    _width += details.delta.dx;
+                  });
+                },
+              ),
+              Expanded(child: ActualStuff()),
+            ],
+          );
+        } else {
+          return const Placeholder();
+        }
+      }),
+    );
+  }
+}
+
+class ActualStuff extends StatelessWidget {
+  const ActualStuff({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    var memoryState = context.watch<MemoryState>();
+    var topics = memoryState.topics;
+
+    var selectedState = context.watch<SelectedState>();
+    var selected = selectedState.selectedSection;
+    // selectedState.setTopicLength(2);
+
+    String title = "";
+
+    if (selected.isEmpty) {
+      title = "Nothing yet!";
+    } else {
+      if (selected.first >= NavIDs.all.index) {
+        title = selected.first == NavIDs.all.index
+            ? "${selected.length - 1} topics"
+            : "${selected.length} topics";
       } else {
-        return const Placeholder();
+        title = NavIDs.values[selected.first].name;
       }
-    });
+    }
+
+    return Column(
+      children: [
+        Text(title),
+        // ListView.builder(
+        //   itemCount: topics.length,
+        //   itemBuilder: (context, index) {},
+        // ),
+      ],
+    );
   }
 }
 
@@ -74,7 +120,7 @@ class ListNavBar extends StatelessWidget {
     var topics = memoryState.topics;
 
     var textTheme = Theme.of(context).textTheme;
-    var textStyle = TextStyle(
+    var navTileTextStyle = TextStyle(
       fontSize: textTheme.labelMedium!.fontSize,
       fontWeight: textTheme.labelMedium!.fontWeight,
     );
@@ -83,16 +129,16 @@ class ListNavBar extends StatelessWidget {
       children: <Widget>[
         // Today
         NavBarTile(
-          icon: const Icon(
-            Icons.star,
-            color: Colors.amber,
-            size: 20,
-          ),
-          text: Text(
-            "Today",
-            style: textStyle,
-          ),
-        ),
+            icon: const Icon(
+              Icons.star,
+              color: Colors.amber,
+              size: 20,
+            ),
+            text: Text(
+              "Today",
+              style: navTileTextStyle,
+            ),
+            id: 0),
 
         // Upcoming
         NavBarTile(
@@ -103,12 +149,13 @@ class ListNavBar extends StatelessWidget {
           ),
           text: Text(
             "Upcoming",
-            style: textStyle,
+            style: navTileTextStyle,
           ),
+          id: 1,
         ),
 
         const Padding(
-          padding: EdgeInsets.all(10.0),
+          padding: EdgeInsets.only(left: 10.0, top: 10.0, bottom: 10.0),
           child: Divider(),
         ),
 
@@ -121,17 +168,18 @@ class ListNavBar extends StatelessWidget {
           ),
           text: Text(
             "All",
-            style: textStyle,
+            style: navTileTextStyle,
           ),
+          id: 2,
         ),
 
         // scrollable topics
-        SizedBox(
-          height: MediaQuery.sizeOf(context).height / 2 + 55,
+        Expanded(
           child: ListView.builder(
             itemCount: topics.length,
             itemBuilder: (context, index) {
               return NavBarTile(
+                id: index + 3,
                 icon: Icon(
                   Icons.circle,
                   size: 20,
@@ -139,7 +187,7 @@ class ListNavBar extends StatelessWidget {
                 ),
                 text: Text(
                   topics[index].name,
-                  style: textStyle,
+                  style: navTileTextStyle,
                 ),
               );
             },
@@ -156,20 +204,47 @@ class ListNavBar extends StatelessWidget {
   }
 }
 
+// customed ListTile for the "navigation bar"
 class NavBarTile extends StatelessWidget {
-  const NavBarTile({super.key, required this.icon, required this.text});
+  const NavBarTile({
+    super.key,
+    required this.icon,
+    required this.text,
+    required this.id,
+  });
 
   final Icon icon;
   final Text text;
+  final int id;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      horizontalTitleGap: 6,
-      minTileHeight: 20,
-      onTap: () {},
-      leading: icon,
-      title: text,
+    var state = context.watch<SelectedState>();
+    var sections = state.selectedSection;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0),
+      child: ListTile(
+        horizontalTitleGap: 6,
+        selectedTileColor: const Color.fromARGB(14, 0, 0, 0),
+        minTileHeight: 20,
+        selected: sections.contains(id) ? true : false,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5.0),
+        ),
+        onTap: () {
+          // switch the list to only show the selected topics
+          state.toggleSection(id);
+          //log('$id is ${sections.contains(id)}');
+        },
+        onLongPress: () {
+          // TODO: change the name / color of the topic
+        },
+        leading: id < 3 || sections.contains(id)
+            ? icon
+            : Icon(Icons.circle_outlined, color: icon.color, size: icon.size),
+        title: text,
+      ),
     );
   }
 }
@@ -193,10 +268,13 @@ class AddTopicButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
+      style: ButtonStyle(
+          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+              RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5.0)))),
+      onPressed: () => _topicDialog(context),
       //style: make it minimum size!,
       child: const Text("+ Add"),
-      //style: ButtonStyle(shape: ),
-      onPressed: () => _topicDialog(context),
     );
   }
 

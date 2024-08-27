@@ -1,9 +1,7 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:todo_app/states/memory_state.dart';
 import 'package:todo_app/pages/list_page.dart';
-import 'package:todo_app/utils/todo.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,52 +27,6 @@ class MyApp extends StatelessWidget {
 }
 
 // db helper functions for state management
-class MemoryState extends ChangeNotifier {
-  // //final _dbHelper = DatabaseHelper();
-
-  // in-memory data
-  List<Topic> _topics = [];
-  List<Topic> get topics => _topics;
-
-  void addTopic(Topic topic) {
-    _topics.add(topic);
-    notifyListeners();
-  }
-
-  void addToDo(ToDo todo) {
-    for (Topic topic in _topics) {
-      if (topic.id == todo.topicId) {
-        topic.todos.add(todo);
-        notifyListeners();
-        return;
-      }
-    }
-
-    // should not happen
-    log("Tried to add a todo to unexisting topic");
-  }
-
-  void updateToDo(ToDo todo) {
-    for (Topic topic in _topics) {
-      if (topic.id == todo.topicId) {
-        topic.todos.add(todo);
-        notifyListeners();
-        return;
-      }
-    }
-  }
-
-  // // only to be invoked in the start of the app
-  // Future<void> fetchTopics() async {
-  //   _topics = await _dbHelper.fetchTopics();
-  //   notifyListeners();
-  // }
-
-  // Future<void> fetchToDosByTopic(int topicId) async {
-  //   _todos = await _dbHelper.fetchToDosByTopic(topicId);
-  //   notifyListeners();
-  // }
-}
 
 class BasePage extends StatefulWidget {
   const BasePage({super.key});
@@ -90,6 +42,12 @@ class _BasePageState extends State<BasePage> {
 
   @override
   Widget build(BuildContext context) {
+    var textTheme = Theme.of(context).textTheme;
+    var segBtnTextStyle = TextStyle(
+      fontSize: textTheme.labelMedium!.fontSize,
+      fontWeight: textTheme.labelMedium!.fontWeight,
+    );
+
     Widget todoViewPage;
     switch (selectedViewType) {
       case ViewType.list:
@@ -107,10 +65,6 @@ class _BasePageState extends State<BasePage> {
       child: todoViewPage,
     );
 
-    // var mainArea = PageView(
-    //   children: [ListPage(), Text("cal")],
-    // );
-
     return Scaffold(
       body: Column(
         children: [
@@ -121,13 +75,22 @@ class _BasePageState extends State<BasePage> {
               child: Padding(
                 padding: const EdgeInsets.only(left: 8, top: 8),
                 child: SegmentedButton<ViewType>(
-                  segments: const <ButtonSegment<ViewType>>[
+                  style: ButtonStyle(
+                      shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5.0)))),
+                  segments: <ButtonSegment<ViewType>>[
                     ButtonSegment<ViewType>(
                         value: ViewType.list,
-                        label: Icon(Icons.list) /*Text("List")*/),
+                        label: Text(
+                          "List",
+                          style: segBtnTextStyle,
+                        )),
                     ButtonSegment<ViewType>(
                         value: ViewType.calendar,
-                        label: Icon(Icons.calendar_today) /*Text("Calendar")*/)
+                        label: Text(
+                          "Calendar",
+                          style: segBtnTextStyle,
+                        ))
                   ],
                   selected: <ViewType>{selectedViewType},
                   onSelectionChanged: (Set<ViewType> type) {
