@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 class ToDo {
   final int id;
   String task;
-  String? date;
+  DateTime? date;
   String? description;
   bool isCompleted;
-  int topicId; // Foreign key to the Topic
+  final int topicId; // Foreign key to the Topic
 
   ToDo({
     int? id,
@@ -38,6 +38,12 @@ class ToDo {
       isCompleted: map['isCompleted'] == 1,
       topicId: map['topicId'],
     );
+  }
+
+  static bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 }
 

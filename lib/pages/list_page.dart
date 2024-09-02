@@ -24,8 +24,8 @@ class _ListPageState extends State<ListPage> {
 
     // Topic tp1 = Topic(id: 3, name: "topic1");
     // Topic tp2 = Topic(id: 4, name: "topic2");
-    // ToDo td1 = ToDo(id: 0, task: "task1", topicId: 0);
-    // ToDo td2 = ToDo(id: 1, task: "task2", topicId: 1);
+    // ToDo td1 = ToDo(id: 0, task: "task1", topicId: 3, date: DateTime.now());
+    // ToDo td2 = ToDo(id: 1, task: "task2", topicId: 4);
 
     // tp1.todos.add(td1);
     // tp2.todos.add(td2);
@@ -45,7 +45,7 @@ class _ListPageState extends State<ListPage> {
                 // drag to change the width of the nav bar
                 behavior: HitTestBehavior.translucent,
                 child: const Padding(
-                  padding: EdgeInsets.only(left: 4.0),
+                  padding: EdgeInsets.only(left: 2.0),
                   child: VerticalDivider(endIndent: 8),
                 ),
                 onHorizontalDragUpdate: (details) {
@@ -75,35 +75,125 @@ class ActualStuff extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var textTheme = Theme.of(context).textTheme;
+
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
 
     var selectedState = context.watch<SelectedState>();
-    var selected = selectedState.selectedSection;
-    // selectedState.setTopicLength(2);
+    var selected = selectedState.selectedTopics;
+    selectedState.setTopicLength(2);
 
     String title = "";
 
     if (selected.isEmpty) {
       title = "Nothing yet!";
     } else {
-      if (selected.first >= NavIDs.all.index) {
-        title = selected.first == NavIDs.all.index
-            ? "${selected.length - 1} topics"
-            : "${selected.length} topics";
+      if (selected.contains(NavIDs.all.index)) {
+        title = selected.length - 1 == 1
+            ? "1 Topic"
+            : "${selected.length - 1} Topics";
+      } else if (selected.first >= NavIDs.all.index) {
+        title = selected.length == 1 ? "1 Topic" : "${selected.length} Topics";
       } else {
-        title = NavIDs.values[selected.first].name;
+        // Today, Upcoming,
+        title = NavIDs.values[selected.first].name[0].toUpperCase() +
+            NavIDs.values[selected.first].name.substring(1).toLowerCase();
       }
     }
 
-    return Column(
-      children: [
-        Text(title),
-        // ListView.builder(
-        //   itemCount: topics.length,
-        //   itemBuilder: (context, index) {},
-        // ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          // title of the page
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              style: TextStyle(fontSize: textTheme.titleMedium!.fontSize),
+            ),
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: selected.length,
+            itemBuilder: (context, index) {
+              if (topics.isEmpty) {
+                return const Text("No topics yet!");
+              }
+
+              // today
+              else if (selected[index] == NavIDs.today.index) {
+                List<ToDo> todayToDos = memoryState.getTodayToDos();
+                int? beforeID;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: todayToDos.length,
+                      itemBuilder: (context, todoIndex) {
+                        var todayToDo = todayToDos[todoIndex];
+                        if (beforeID == null || beforeID != todayToDo.topicId) {
+                          Text(topics
+                              .firstWhere(
+                                  (element) => element.id == todayToDo.topicId)
+                              .name);
+                          beforeID = todayToDo.topicId;
+                        }
+                        return Text(todayToDo.task);
+                      },
+                    )
+                  ],
+                );
+              }
+
+              // upcoming
+              else if (selected[index] == NavIDs.upcoming.index) {
+                List<ToDo> upcomingToDos = memoryState.getUpcomingToDos();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: upcomingToDos.length,
+                      itemBuilder: (context, todoIndex) {
+                        return Text(upcomingToDos[todoIndex].task);
+                      },
+                    )
+                  ],
+                );
+              }
+
+              // All
+              else if (selected[index] == NavIDs.all.index) {
+                return Text("That's all!"); // "continue"
+              }
+
+              // topics
+              final currTopic = topics[selected[index] - NavIDs.topic0.index];
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(currTopic.name),
+                  ListView.builder(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: currTopic.todos.length,
+                      itemBuilder: (context, todoIndex) {
+                        return Text(currTopic.todos[todoIndex].task);
+                      }),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -138,7 +228,7 @@ class ListNavBar extends StatelessWidget {
               "Today",
               style: navTileTextStyle,
             ),
-            id: 0),
+            id: NavIDs.today.index),
 
         // Upcoming
         NavBarTile(
@@ -151,7 +241,7 @@ class ListNavBar extends StatelessWidget {
             "Upcoming",
             style: navTileTextStyle,
           ),
-          id: 1,
+          id: NavIDs.upcoming.index,
         ),
 
         const Padding(
@@ -170,7 +260,7 @@ class ListNavBar extends StatelessWidget {
             "All",
             style: navTileTextStyle,
           ),
-          id: 2,
+          id: NavIDs.all.index,
         ),
 
         // scrollable topics
@@ -179,7 +269,7 @@ class ListNavBar extends StatelessWidget {
             itemCount: topics.length,
             itemBuilder: (context, index) {
               return NavBarTile(
-                id: index + 3,
+                id: index + NavIDs.topic0.index,
                 icon: Icon(
                   Icons.circle,
                   size: 20,
@@ -220,7 +310,7 @@ class NavBarTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var state = context.watch<SelectedState>();
-    var sections = state.selectedSection;
+    var sections = state.selectedTopics;
 
     return Padding(
       padding: const EdgeInsets.only(left: 8.0),

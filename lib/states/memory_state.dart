@@ -37,6 +37,37 @@ class MemoryState extends ChangeNotifier {
     }
   }
 
+  // iterates through every todos there and
+  List<ToDo> getTodayToDos() {
+    DateTime today = DateTime.now();
+    List<ToDo> todayToDos = [];
+
+    for (var topic in _topics) {
+      for (var todo in topic.todos) {
+        if (todo.date != null && ToDo.isSameDay(today, todo.date!)) {
+          todayToDos.add(todo);
+        }
+      }
+    }
+
+    return todayToDos;
+  }
+
+  List<ToDo> getUpcomingToDos() {
+    DateTime today = DateTime.now();
+    List<ToDo> upcomingToDos = [];
+
+    for (var topic in _topics) {
+      for (var todo in topic.todos) {
+        if (todo.date != null && todo.date!.isAfter(today)) {
+          upcomingToDos.add(todo);
+        }
+      }
+    }
+
+    return upcomingToDos;
+  }
+
   // // only to be invoked in the start of the app
   // Future<void> fetchTopics() async {
   //   _topics = await _dbHelper.fetchTopics();
