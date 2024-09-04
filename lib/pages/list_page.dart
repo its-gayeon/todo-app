@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/states/memory_state.dart';
 import 'package:todo_app/states/selected_state.dart';
@@ -22,23 +23,48 @@ class _ListPageState extends State<ListPage> {
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
 
-    // Topic tp1 = Topic(id: 3, name: "topic1");
-    // Topic tp2 = Topic(id: 4, name: "topic2");
-    // ToDo td1 = ToDo(id: 0, task: "task1", topicId: 3, date: DateTime.now());
-    // ToDo td2 = ToDo(id: 1, task: "task2", topicId: 4);
-
-    // tp1.todos.add(td1);
-    // tp2.todos.add(td2);
-
+    // Topic tp1 = Topic(
+    //     id: memoryState.topiclen + NavIDs.topic0.index,
+    //     name: "topic1",
+    //     color: Colors.cyan);
     // topics.add(tp1);
+    // memoryState.topiclen++;
+
+    // Topic tp2 =
+    //     Topic(id: memoryState.topiclen + NavIDs.topic0.index, name: "topic2");
     // topics.add(tp2);
+    // memoryState.topiclen++;
+
+    // ToDo td1 = ToDo(
+    //     id: memoryState.todolen,
+    //     task: "task1",
+    //     topicId: 3,
+    //     date: DateTime.now());
+    // tp1.todos.add(td1);
+    // memoryState.todolen++;
+
+    // ToDo td2 = ToDo(
+    //     id: memoryState.todolen,
+    //     task: "task2",
+    //     topicId: 4,
+    //     date: DateTime.now().add(const Duration(days: 3)));
+    // tp2.todos.add(td2);
+    // memoryState.todolen++;
+
+    // ToDo td3 = ToDo(
+    //     id: memoryState.todolen,
+    //     task: "task11",
+    //     topicId: 3,
+    //     date: DateTime.now().subtract(const Duration(days: 2)));
+    // tp1.todos.add(td3);
+    // memoryState.todolen++;
 
     return ChangeNotifierProvider(
       create: (context) => SelectedState(),
       child: LayoutBuilder(builder: (context, constraints) {
         if (constraints.maxWidth >= 300) {
           return Row(
-            //  [ navigation bar | context ]
+            //  [ navbar | context ]
             children: [
               SizedBox(width: _width, child: const ListNavBar()),
               GestureDetector(
@@ -82,7 +108,7 @@ class ActualStuff extends StatelessWidget {
 
     var selectedState = context.watch<SelectedState>();
     var selected = selectedState.selectedTopics;
-    selectedState.setTopicLength(2);
+    selectedState.setTopicLength(topics.length);
 
     String title = "";
 
@@ -103,96 +129,236 @@ class ActualStuff extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(3.0),
       child: Column(
         children: [
           // title of the page
           Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              title,
-              style: TextStyle(fontSize: textTheme.titleMedium!.fontSize),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                title,
+                style: textTheme.titleMedium,
+              ),
             ),
           ),
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: selected.length,
-            itemBuilder: (context, index) {
-              if (topics.isEmpty) {
-                return const Text("No topics yet!");
-              }
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: selected.length,
+              itemBuilder: (context, index) {
+                if (topics.isEmpty) {
+                  return Text("No topics yet!");
+                }
 
-              // today
-              else if (selected[index] == NavIDs.today.index) {
-                List<ToDo> todayToDos = memoryState.getTodayToDos();
-                int? beforeID;
+                // today
+                else if (selected[index] == NavIDs.today.index) {
+                  List<ToDo> todayToDos = memoryState.getTodayToDos();
+                  List<ToDo> overToDos = memoryState.getOverToDos();
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const ClampingScrollPhysics(),
-                      itemCount: todayToDos.length,
-                      itemBuilder: (context, todoIndex) {
-                        var todayToDo = todayToDos[todoIndex];
-                        if (beforeID == null || beforeID != todayToDo.topicId) {
-                          Text(topics
-                              .firstWhere(
-                                  (element) => element.id == todayToDo.topicId)
-                              .name);
-                          beforeID = todayToDo.topicId;
-                        }
-                        return Text(todayToDo.task);
-                      },
-                    )
-                  ],
-                );
-              }
+                  return Column(
+                    children: [
+                      // overdue
+                      overToDos.isEmpty
+                          ? const SizedBox()
+                          : TopicTile(
+                              topic: Topic(name: "Overdue", color: Colors.red),
+                              children: ListView.builder(
+                                shrinkWrap: true,
+                                physics: const ClampingScrollPhysics(),
+                                itemCount: overToDos.length,
+                                itemBuilder: (context, todoIndex) {
+                                  int currTopicID = overToDos.first.topicId;
+                                  if (todoIndex + 1 < overToDos.length &&
+                                      currTopicID !=
+                                          overToDos[todoIndex + 1].topicId) {
+                                    currTopicID =
+                                        overToDos[todoIndex + 1].topicId;
+                                  }
+                                  return ToDoTile(overToDos[todoIndex]);
+                                },
+                              ),
+                            ),
 
-              // upcoming
-              else if (selected[index] == NavIDs.upcoming.index) {
-                List<ToDo> upcomingToDos = memoryState.getUpcomingToDos();
+                      todayToDos.isEmpty
+                          ? const SizedBox()
+                          : TopicTile(
+                              topic: Topic(name: "Today", color: Colors.yellow),
+                              children: ListView.builder(
+                                shrinkWrap: true,
+                                physics: const ClampingScrollPhysics(),
+                                itemCount: todayToDos.length,
+                                itemBuilder: (context, todoIndex) {
+                                  int currTopicID = todayToDos.first.topicId;
+                                  if (todoIndex + 1 < todayToDos.length &&
+                                      currTopicID !=
+                                          todayToDos[todoIndex + 1].topicId) {
+                                    currTopicID =
+                                        todayToDos[todoIndex + 1].topicId;
+                                  }
+                                  return ToDoTile(todayToDos[todoIndex]);
+                                },
+                              ),
+                            )
+                      // today
+                    ],
+                  );
+                }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListView.builder(
+                // upcoming
+                else if (selected[index] == NavIDs.upcoming.index) {
+                  List<ToDo> upcomingToDos = memoryState.getUpcomingToDos();
+                  if (upcomingToDos.isEmpty) {
+                    return Text("No Upcoming ToDos!");
+                  }
+
+                  return TopicTile(
+                    topic: Topic(name: "Upcoming", color: Colors.blue),
+                    children: ListView.builder(
                       shrinkWrap: true,
                       physics: const ClampingScrollPhysics(),
                       itemCount: upcomingToDos.length,
                       itemBuilder: (context, todoIndex) {
-                        return Text(upcomingToDos[todoIndex].task);
+                        int currTopicID = upcomingToDos.first.topicId;
+                        if (todoIndex + 1 < upcomingToDos.length &&
+                            currTopicID !=
+                                upcomingToDos[todoIndex + 1].topicId) {
+                          currTopicID = upcomingToDos[todoIndex + 1].topicId;
+                        }
+                        return ToDoTile(upcomingToDos[todoIndex]);
                       },
-                    )
-                  ],
-                );
-              }
+                    ),
+                  );
+                }
 
-              // All
-              else if (selected[index] == NavIDs.all.index) {
-                return Text("That's all!"); // "continue"
-              }
+                // All
+                else if (selected[index] == NavIDs.all.index) {
+                  return const SizedBox(); // "continue"
+                }
 
-              // topics
-              final currTopic = topics[selected[index] - NavIDs.topic0.index];
+                // topics
+                // TODO: check topic's existence before assigning to currTopic
+                final currTopic = topics[selected[index] - NavIDs.topic0.index];
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(currTopic.name),
-                  ListView.builder(
+                return TopicTile(
+                  topic: currTopic,
+                  children: ListView.builder(
                       shrinkWrap: true,
+                      // padding: EdgeInsets.zero,
                       physics: const ClampingScrollPhysics(),
                       itemCount: currTopic.todos.length,
                       itemBuilder: (context, todoIndex) {
-                        return Text(currTopic.todos[todoIndex].task);
+                        return ToDoTile(currTopic.todos[todoIndex]);
                       }),
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class TopicTile extends StatelessWidget {
+  const TopicTile({
+    super.key,
+    required this.topic,
+    required this.children,
+  });
+
+  final Topic topic;
+  final Widget children;
+
+  @override
+  Widget build(BuildContext context) {
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    return Theme(
+      data: ThemeData(
+          splashColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 8, bottom: 4.0),
+        child: ExpansionTile(
+            expansionAnimationStyle: AnimationStyle(
+                curve: Curves.easeInOut, duration: Durations.short4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5.0),
+            ),
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5.0),
+            ),
+            backgroundColor: Colors.white,
+            initiallyExpanded: true,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+            minTileHeight: 20,
+            enableFeedback: false,
+            iconColor: topic.color,
+            collapsedIconColor: topic.color,
+            collapsedBackgroundColor: Colors.white,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              topic.name,
+              style: textTheme.labelLarge,
+            ),
+            childrenPadding: EdgeInsets.zero,
+            children: [
+              const Divider(
+                height: 1,
+                thickness: 1,
+                indent: 8.0,
+                endIndent: 8.0,
+                color: Colors.black26,
+              ),
+              children,
+            ]),
+      ),
+    );
+  }
+}
+
+class ToDoTile extends StatelessWidget {
+  const ToDoTile(
+    this.currToDo, {
+    super.key,
+  });
+
+  final ToDo currToDo;
+
+  @override
+  Widget build(BuildContext context) {
+    var memoryState = context.watch<MemoryState>();
+    var textTheme = Theme.of(context).textTheme;
+
+    return ListTile(
+      minTileHeight: 10,
+      contentPadding: const EdgeInsets.only(left: 45, right: 12),
+      leading: GestureDetector(
+        onTap: () {
+          memoryState.toggleCompleted(currToDo);
+        },
+        child: Icon(
+          currToDo.isCompleted
+              ? Icons.check_box
+              : Icons.check_box_outline_blank,
+        ),
+      ),
+
+      // leading: IconButton(
+      //     padding: EdgeInsets.zero,
+      //     iconSize: 20,
+      //     style: const ButtonStyle(overlayColor: WidgetStateColor.transparent),
+      //     icon: currToDo.isCompleted
+      //         ? const Icon(Icons.check_box)
+      //         : const Icon(Icons.check_box_outline_blank),
+      //     onPressed: () {
+      //       memoryState.toggleCompleted(currToDo);
+      //     }),
+      title: Text(
+        currToDo.task,
+        style: textTheme.bodyMedium,
       ),
     );
   }
@@ -309,8 +475,11 @@ class NavBarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var state = context.watch<SelectedState>();
-    var sections = state.selectedTopics;
+    var sectionState = context.watch<SelectedState>();
+    var sections = sectionState.selectedTopics;
+
+    var memoryState = context.watch<MemoryState>();
+    var topics = memoryState.topics;
 
     return Padding(
       padding: const EdgeInsets.only(left: 8.0),
@@ -318,22 +487,38 @@ class NavBarTile extends StatelessWidget {
         horizontalTitleGap: 6,
         selectedTileColor: const Color.fromARGB(14, 0, 0, 0),
         minTileHeight: 20,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        selectedColor: Colors.black54,
         selected: sections.contains(id) ? true : false,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5.0),
         ),
         onTap: () {
           // switch the list to only show the selected topics
-          state.toggleSection(id);
-          //log('$id is ${sections.contains(id)}');
+          sectionState.toggleSection(id);
         },
         onLongPress: () {
+          // and/or right click
           // TODO: change the name / color of the topic
         },
-        leading: id < 3 || sections.contains(id)
-            ? icon
-            : Icon(Icons.circle_outlined, color: icon.color, size: icon.size),
-        title: text,
+        leading: id < NavIDs.topic0.index || sections.contains(id)
+            ? icon // star, calendar, or filled circle for the selected topics
+            : Icon(Icons.circle_outlined,
+                color: icon.color,
+                size: icon.size), // not selected topic's icon
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            text,
+            Text(
+              "${id >= NavIDs.topic0.index ? topics.firstWhere((element) => element.id == id).todos.length : 0}",
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54),
+            ),
+          ],
+        ),
       ),
     );
   }

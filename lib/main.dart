@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_app/states/memory_state.dart';
 import 'package:todo_app/pages/list_page.dart';
+import 'package:todo_app/pages/cal_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'TODO on Desk',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
           useMaterial3: true,
         ),
         home: const BasePage(),
@@ -54,7 +55,7 @@ class _BasePageState extends State<BasePage> {
         todoViewPage = const ListPage();
         break;
       case ViewType.calendar:
-        todoViewPage = const Text("cal");
+        todoViewPage = const CalPage();
         break;
       default:
         throw UnimplementedError('shouldn\'t happen!!');
@@ -74,31 +75,54 @@ class _BasePageState extends State<BasePage> {
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.only(left: 8, top: 8),
-                child: SegmentedButton<ViewType>(
-                  style: ButtonStyle(
-                      shape: WidgetStateProperty.all(RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5.0)))),
-                  segments: <ButtonSegment<ViewType>>[
-                    ButtonSegment<ViewType>(
-                        value: ViewType.list,
-                        label: Text(
-                          "List",
-                          style: segBtnTextStyle,
-                        )),
-                    ButtonSegment<ViewType>(
-                        value: ViewType.calendar,
-                        label: Text(
-                          "Calendar",
-                          style: segBtnTextStyle,
-                        ))
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SegmentedButton<ViewType>(
+                      style: ButtonStyle(
+                          shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5.0)))),
+                      segments: <ButtonSegment<ViewType>>[
+                        ButtonSegment<ViewType>(
+                            value: ViewType.list,
+                            label: Text(
+                              "List",
+                              style: segBtnTextStyle,
+                            )),
+                        ButtonSegment<ViewType>(
+                            value: ViewType.calendar,
+                            label: Text(
+                              "Calendar",
+                              style: segBtnTextStyle,
+                            ))
+                      ],
+                      selected: <ViewType>{selectedViewType},
+                      onSelectionChanged: (Set<ViewType> type) {
+                        setState(() {
+                          selectedViewType = type.first;
+                        });
+                      },
+                      showSelectedIcon: false,
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                            onPressed: () {},
+                            iconSize: 20,
+                            icon: const Icon(
+                              color: Colors.black54,
+                              Icons.signal_cellular_alt,
+                            )),
+                        IconButton(
+                            onPressed: () {},
+                            iconSize: 20,
+                            icon: const Icon(
+                              color: Colors.black54,
+                              Icons.settings,
+                            ))
+                      ],
+                    ),
                   ],
-                  selected: <ViewType>{selectedViewType},
-                  onSelectionChanged: (Set<ViewType> type) {
-                    setState(() {
-                      selectedViewType = type.first;
-                    });
-                  },
-                  showSelectedIcon: false,
                 ),
               ),
             ),

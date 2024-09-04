@@ -9,8 +9,12 @@ class MemoryState extends ChangeNotifier {
   List<Topic> _topics = [];
   List<Topic> get topics => _topics;
 
+  int topiclen = 0;
+  int todolen = 0;
+
   void addTopic(Topic topic) {
     _topics.add(topic);
+    topiclen++;
     notifyListeners();
   }
 
@@ -18,6 +22,7 @@ class MemoryState extends ChangeNotifier {
     for (Topic topic in _topics) {
       if (topic.id == todo.topicId) {
         topic.todos.add(todo);
+        todolen++;
         notifyListeners();
         return;
       }
@@ -37,7 +42,7 @@ class MemoryState extends ChangeNotifier {
     }
   }
 
-  // iterates through every todos there and
+  // iterates through every todos there and make a list of today todos
   List<ToDo> getTodayToDos() {
     DateTime today = DateTime.now();
     List<ToDo> todayToDos = [];
@@ -53,19 +58,40 @@ class MemoryState extends ChangeNotifier {
     return todayToDos;
   }
 
+  List<ToDo> getOverToDos() {
+    DateTime today = DateTime.now();
+    List<ToDo> overToDos = [];
+
+    for (var topic in _topics) {
+      for (var todo in topic.todos) {
+        if (todo.date != null && ToDo.isBeforeDay(todo.date!, today)) {
+          overToDos.add(todo);
+        }
+      }
+    }
+
+    return overToDos;
+  }
+
+  // iterates through every todos there and make a list of upcoming todos
   List<ToDo> getUpcomingToDos() {
     DateTime today = DateTime.now();
     List<ToDo> upcomingToDos = [];
 
     for (var topic in _topics) {
       for (var todo in topic.todos) {
-        if (todo.date != null && todo.date!.isAfter(today)) {
+        if (todo.date != null && ToDo.isBeforeDay(today, todo.date!)) {
           upcomingToDos.add(todo);
         }
       }
     }
 
     return upcomingToDos;
+  }
+
+  void toggleCompleted(ToDo todo) {
+    todo.isCompleted = !todo.isCompleted;
+    notifyListeners();
   }
 
   // // only to be invoked in the start of the app
