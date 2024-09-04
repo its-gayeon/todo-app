@@ -176,7 +176,11 @@ class ActualStuff extends StatelessWidget {
                                     currTopicID =
                                         overToDos[todoIndex + 1].topicId;
                                   }
-                                  return ToDoTile(overToDos[todoIndex]);
+                                  return ToDoTile(overToDos[todoIndex],
+                                      color: topics
+                                          .firstWhere((element) =>
+                                              element.id == currTopicID)
+                                          .color);
                                 },
                               ),
                             ),
@@ -197,7 +201,11 @@ class ActualStuff extends StatelessWidget {
                                     currTopicID =
                                         todayToDos[todoIndex + 1].topicId;
                                   }
-                                  return ToDoTile(todayToDos[todoIndex]);
+                                  return ToDoTile(todayToDos[todoIndex],
+                                      color: topics
+                                          .firstWhere((element) =>
+                                              element.id == currTopicID)
+                                          .color);
                                 },
                               ),
                             )
@@ -249,7 +257,10 @@ class ActualStuff extends StatelessWidget {
                       physics: const ClampingScrollPhysics(),
                       itemCount: currTopic.todos.length,
                       itemBuilder: (context, todoIndex) {
-                        return ToDoTile(currTopic.todos[todoIndex]);
+                        return ToDoTile(
+                          currTopic.todos[todoIndex],
+                          color: currTopic.color,
+                        );
                       }),
                 );
               },
@@ -322,10 +333,12 @@ class TopicTile extends StatelessWidget {
 class ToDoTile extends StatelessWidget {
   const ToDoTile(
     this.currToDo, {
+    this.color = Colors.black,
     super.key,
   });
 
   final ToDo currToDo;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -343,19 +356,9 @@ class ToDoTile extends StatelessWidget {
           currToDo.isCompleted
               ? Icons.check_box
               : Icons.check_box_outline_blank,
+          color: color.withAlpha(130),
         ),
       ),
-
-      // leading: IconButton(
-      //     padding: EdgeInsets.zero,
-      //     iconSize: 20,
-      //     style: const ButtonStyle(overlayColor: WidgetStateColor.transparent),
-      //     icon: currToDo.isCompleted
-      //         ? const Icon(Icons.check_box)
-      //         : const Icon(Icons.check_box_outline_blank),
-      //     onPressed: () {
-      //       memoryState.toggleCompleted(currToDo);
-      //     }),
       title: Text(
         currToDo.task,
         style: textTheme.bodyMedium,
@@ -453,7 +456,7 @@ class ListNavBar extends StatelessWidget {
         // buttons for adding and searching topics
         const Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [AddTopicButton(), SearchButton()],
+          children: [AddTopicButton()],
         )
       ],
     );
@@ -531,7 +534,12 @@ class SearchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(onPressed: () {}, icon: const Icon(Icons.search));
+    return IconButton(
+        onPressed: () {},
+        icon: const Icon(
+          Icons.search,
+          size: 20,
+        ));
   }
 }
 
@@ -542,14 +550,23 @@ class AddTopicButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      style: ButtonStyle(
-          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5.0)))),
-      onPressed: () => _topicDialog(context),
-      //style: make it minimum size!,
-      child: const Text("+ Add"),
+    TextTheme textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: TextButton(
+        style: ButtonStyle(
+            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5.0)))),
+        onPressed: () => _topicDialog(context),
+        //style: make it minimum size!,
+        child: Text(
+          "+ New Topic",
+          style: TextStyle(
+              fontSize: textTheme.labelMedium!.fontSize,
+              fontWeight: textTheme.labelMedium!.fontWeight),
+        ),
+      ),
     );
   }
 
@@ -570,7 +587,7 @@ class AddTopicButton extends StatelessWidget {
           children: const [
             Column(children: [
               Padding(
-                padding: EdgeInsets.all(10.0),
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
                 child: TextField(),
               ),
             ]),
