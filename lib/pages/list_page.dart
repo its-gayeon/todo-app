@@ -152,7 +152,7 @@ class ActualStuff extends StatelessWidget {
                   return Text("No topics yet!");
                 }
 
-                // today
+                // 0: today
                 else if (selected[index] == NavIDs.today.index) {
                   List<ToDo> todayToDos = memoryState.getTodayToDos();
                   List<ToDo> overToDos = memoryState.getOverToDos();
@@ -185,6 +185,7 @@ class ActualStuff extends StatelessWidget {
                               ),
                             ),
 
+                      // today
                       todayToDos.isEmpty
                           ? const SizedBox()
                           : TopicTile(
@@ -209,12 +210,11 @@ class ActualStuff extends StatelessWidget {
                                 },
                               ),
                             )
-                      // today
                     ],
                   );
                 }
 
-                // upcoming
+                // 1: upcoming
                 else if (selected[index] == NavIDs.upcoming.index) {
                   List<ToDo> upcomingToDos = memoryState.getUpcomingToDos();
                   if (upcomingToDos.isEmpty) {
@@ -240,12 +240,12 @@ class ActualStuff extends StatelessWidget {
                   );
                 }
 
-                // All
+                // 2: All
                 else if (selected[index] == NavIDs.all.index) {
                   return const SizedBox(); // "continue"
                 }
 
-                // topics
+                // 3: topics
                 // TODO: check topic's existence before assigning to currTopic
                 final currTopic = topics[selected[index] - NavIDs.topic0.index];
 
@@ -273,7 +273,7 @@ class ActualStuff extends StatelessWidget {
 }
 
 class TopicTile extends StatelessWidget {
-  const TopicTile({
+  TopicTile({
     super.key,
     required this.topic,
     required this.children,
@@ -281,10 +281,13 @@ class TopicTile extends StatelessWidget {
 
   final Topic topic;
   final Widget children;
+  final taskTextFieldController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
+    var memoryState = context.watch<MemoryState>();
+
     return Theme(
       data: ThemeData(
           splashColor: Colors.transparent,
@@ -324,6 +327,31 @@ class TopicTile extends StatelessWidget {
                 color: Colors.black26,
               ),
               children,
+              ListTile(
+                minTileHeight: 10,
+                contentPadding: const EdgeInsets.only(left: 45, right: 12),
+                leading: Icon(
+                  Icons.add,
+                  color: topic.color.withAlpha(180),
+                ),
+                title: TextField(
+                    cursorHeight: 15,
+                    style: textTheme.bodyMedium,
+                    decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: "Add task",
+                        hintStyle: TextStyle(
+                            fontSize: textTheme.bodyMedium!.fontSize,
+                            fontWeight: textTheme.bodyMedium!.fontWeight,
+                            color: Colors.black54)),
+                    controller: taskTextFieldController,
+                    onSubmitted: (value) {
+                      memoryState.addToDo(
+                          ToDo(task: value, topicId: topic.id), topic.id);
+                      taskTextFieldController.clear();
+                    }),
+              ),
             ]),
       ),
     );
@@ -356,7 +384,7 @@ class ToDoTile extends StatelessWidget {
           currToDo.isCompleted
               ? Icons.check_box
               : Icons.check_box_outline_blank,
-          color: color.withAlpha(130),
+          color: color.withAlpha(180),
         ),
       ),
       title: Text(
@@ -559,7 +587,6 @@ class AddTopicButton extends StatelessWidget {
                 RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5.0)))),
         onPressed: () => _topicDialog(context),
-        //style: make it minimum size!,
         child: Text(
           "+ New Topic",
           style: TextStyle(
@@ -571,27 +598,110 @@ class AddTopicButton extends StatelessWidget {
   }
 
   Future<void> _topicDialog(BuildContext context) {
+    TextTheme textTheme = Theme.of(context).textTheme;
+    List<Color> colorScheme = [
+      Colors.red,
+      Colors.orange,
+      Colors.yellow,
+      Colors.green,
+      Colors.blue,
+      Colors.purple,
+      Colors.black,
+    ];
+
+    String? topicName;
+    Color topicColor = Colors.black;
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return SimpleDialog(
-          title: const Text("Add New Topic"),
-          shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(5))),
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 24),
-          titleTextStyle: TextStyle(
-            color: Theme.of(context).primaryColor,
-            fontSize: Theme.of(context).textTheme.titleSmall!.fontSize,
-          ),
-          children: const [
-            Column(children: [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.0),
-                child: TextField(),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return SimpleDialog(
+              elevation: 0,
+              title: const Text("Add New Topic"),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(5))),
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 24),
+              titleTextStyle: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontSize: Theme.of(context).textTheme.titleSmall!.fontSize,
               ),
-            ]),
-          ],
+              children: [
+                SizedBox(
+                  width: 100,
+                  height: 200,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      children: [
+                        TextField(
+                            autofocus: true,
+                            cursorHeight: 15,
+                            style: textTheme.bodySmall,
+                            decoration: InputDecoration(
+                                labelText: "Topic's name",
+                                labelStyle: TextStyle(
+                                    fontSize: textTheme.bodySmall!.fontSize,
+                                    fontWeight: textTheme.bodySmall!.fontWeight,
+                                    color: Colors.black54)),
+                            onChanged: (value) {
+                              setState(() {
+                                topicName = value;
+                              });
+                            }),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Row(
+                              children: [
+                                Text(
+                                  "Color: ",
+                                  style: textTheme.bodySmall,
+                                ),
+                                DropdownButton(
+                                    //TODO: need to customize!!!!! (actually make a separate widget file)
+                                    items: colorScheme
+                                        .map((element) => DropdownMenuItem(
+                                            value: element,
+                                            child: Icon(
+                                              Icons.circle,
+                                              color: element,
+                                            )))
+                                        .toList(),
+                                    onChanged: (value) {
+                                      setState(() => topicColor = value!);
+                                    }),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: TextButton(
+                            onPressed: () {
+                              if (topicName != null) {
+                                log("adding!");
+                                var memoryState = context.read<MemoryState>();
+                                memoryState.addTopic(Topic(
+                                    id: memoryState.topiclen +
+                                        NavIDs.topic0.index,
+                                    name: topicName!,
+                                    color: topicColor));
+                              }
+                              Navigator.of(context).pop();
+                            },
+                            child: Text("OK", style: textTheme.labelSmall),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

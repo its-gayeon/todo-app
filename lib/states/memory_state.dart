@@ -18,18 +18,23 @@ class MemoryState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addToDo(ToDo todo) {
-    for (Topic topic in _topics) {
-      if (topic.id == todo.topicId) {
-        topic.todos.add(todo);
-        todolen++;
-        notifyListeners();
-        return;
-      }
-    }
+  void addToDo(ToDo todo, int id) {
+    topics.firstWhere((element) => element.id == id).todos.add(todo);
+    todolen++;
+    notifyListeners();
+    return;
 
-    // should not happen
-    log("Tried to add a todo to unexisting topic");
+    // for (Topic topic in _topics) {
+    //   if (topic.id == todo.topicId) {
+    //     topic.todos.add(todo);
+    //     todolen++;
+    //     notifyListeners();
+    //     return;
+    //   }
+    // }
+
+    // // should not happen
+    // log("Tried to add a todo to unexisting topic");
   }
 
   void updateToDo(ToDo todo) {
