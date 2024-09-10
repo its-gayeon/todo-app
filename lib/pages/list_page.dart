@@ -23,42 +23,6 @@ class _ListPageState extends State<ListPage> {
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
 
-    // Topic tp1 = Topic(
-    //     id: memoryState.topiclen + NavIDs.topic0.index,
-    //     name: "topic1",
-    //     color: Colors.cyan);
-    // topics.add(tp1);
-    // memoryState.topiclen++;
-
-    // Topic tp2 =
-    //     Topic(id: memoryState.topiclen + NavIDs.topic0.index, name: "topic2");
-    // topics.add(tp2);
-    // memoryState.topiclen++;
-
-    // ToDo td1 = ToDo(
-    //     id: memoryState.todolen,
-    //     task: "task1",
-    //     topicId: 3,
-    //     date: DateTime.now());
-    // tp1.todos.add(td1);
-    // memoryState.todolen++;
-
-    // ToDo td2 = ToDo(
-    //     id: memoryState.todolen,
-    //     task: "task2",
-    //     topicId: 4,
-    //     date: DateTime.now().add(const Duration(days: 3)));
-    // tp2.todos.add(td2);
-    // memoryState.todolen++;
-
-    // ToDo td3 = ToDo(
-    //     id: memoryState.todolen,
-    //     task: "task11",
-    //     topicId: 3,
-    //     date: DateTime.now().subtract(const Duration(days: 2)));
-    // tp1.todos.add(td3);
-    // memoryState.todolen++;
-
     return ChangeNotifierProvider(
       create: (context) => SelectedState(),
       child: LayoutBuilder(builder: (context, constraints) {
@@ -372,25 +336,41 @@ class ToDoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     var memoryState = context.watch<MemoryState>();
     var textTheme = Theme.of(context).textTheme;
+    var editTask = false;
 
-    return ListTile(
-      minTileHeight: 10,
-      contentPadding: const EdgeInsets.only(left: 45, right: 12),
-      leading: GestureDetector(
-        onTap: () {
-          memoryState.toggleCompleted(currToDo);
-        },
-        child: Icon(
-          currToDo.isCompleted
-              ? Icons.check_box
-              : Icons.check_box_outline_blank,
-          color: color.withAlpha(180),
-        ),
-      ),
-      title: Text(
-        currToDo.task,
-        style: textTheme.bodyMedium,
-      ),
+    return StatefulBuilder(
+      builder: (BuildContext context, void Function(void Function()) setState) {
+        return ListTile(
+          minTileHeight: 10,
+          contentPadding: const EdgeInsets.only(left: 45, right: 12),
+          leading: GestureDetector(
+            onTap: () {
+              memoryState.toggleCompleted(currToDo);
+            },
+            child: Icon(
+              currToDo.isCompleted
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+              color: color.withAlpha(180),
+            ),
+          ),
+          title: GestureDetector(
+            // TODO: add drag and stuff maybe?
+            child: TextField(
+              cursorHeight: 15,
+              style: textTheme.bodyMedium,
+              controller: TextEditingController()..text = currToDo.task,
+              onSubmitted: (text) {
+                memoryState.updateToDo(ToDo(
+                    task: text, topicId: currToDo.topicId, id: currToDo.id));
+                editTask = false;
+              },
+              decoration: const InputDecoration(
+                  isDense: true, border: InputBorder.none),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -512,6 +492,19 @@ class NavBarTile extends StatelessWidget {
     var memoryState = context.watch<MemoryState>();
     var topics = memoryState.topics;
 
+    var todoCount;
+    if (id == NavIDs.today.index) {
+      todoCount = memoryState.getTodayToDos().length +
+          memoryState.getOverToDos().length;
+    } else if (id == NavIDs.upcoming.index) {
+      todoCount = memoryState.getUpcomingToDos().length;
+    } else if (id == NavIDs.all.index) {
+      todoCount = memoryState.todolen;
+    } else {
+      todoCount = -1;
+      // this shouldn't happen
+    }
+
     return Padding(
       padding: const EdgeInsets.only(left: 8.0),
       child: ListTile(
@@ -542,7 +535,7 @@ class NavBarTile extends StatelessWidget {
           children: [
             text,
             Text(
-              "${id >= NavIDs.topic0.index ? topics.firstWhere((element) => element.id == id).todos.length : 0}",
+              "${id >= NavIDs.topic0.index ? topics.firstWhere((element) => element.id == id - NavIDs.topic0.index).todos.length : todoCount}",
               style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
@@ -685,8 +678,7 @@ class AddTopicButton extends StatelessWidget {
                                 log("adding!");
                                 var memoryState = context.read<MemoryState>();
                                 memoryState.addTopic(Topic(
-                                    id: memoryState.topiclen +
-                                        NavIDs.topic0.index,
+                                    id: memoryState.topiclen,
                                     name: topicName!,
                                     color: topicColor));
                               }

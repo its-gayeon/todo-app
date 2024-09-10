@@ -23,28 +23,25 @@ class MemoryState extends ChangeNotifier {
     todolen++;
     notifyListeners();
     return;
-
-    // for (Topic topic in _topics) {
-    //   if (topic.id == todo.topicId) {
-    //     topic.todos.add(todo);
-    //     todolen++;
-    //     notifyListeners();
-    //     return;
-    //   }
-    // }
-
-    // // should not happen
-    // log("Tried to add a todo to unexisting topic");
   }
 
   void updateToDo(ToDo todo) {
-    for (Topic topic in _topics) {
-      if (topic.id == todo.topicId) {
-        topic.todos.add(todo);
-        notifyListeners();
-        return;
-      }
+    var currTopic = _topics.firstWhere((element) => element.id == todo.topicId);
+    var currToDo =
+        currTopic.todos.firstWhere((element) => element.id == todo.id);
+
+    if (todo.task != currToDo.task) {
+      currToDo.task = todo.task;
+      log("changed the name of the todo: ${todo.task}");
     }
+    if (todo.date != null) {
+      currToDo.date = todo.date;
+    }
+    if (todo.description != null) {
+      currToDo.description = todo.description;
+    }
+    notifyListeners();
+    return;
   }
 
   // iterates through every todos there and make a list of today todos
